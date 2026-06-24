@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Змейка - Фруктовый рай</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            background: #0a0a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .container {
+            position: relative;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+            max-width: 98vw;
+            max-height: 98vh;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .score {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .score span {
+            color: #00ff88;
+        }
+
+        .score .gold {
+            color: #ffdd00;
+        }
+
+        .controls-info {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #0a0a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+            flex: 1;
+            min-height: 0;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #0a0a1a;
+            touch-action: none;
+            image-rendering: pixelated;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            touch-action: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            font-weight: bold;
+        }
+
+        .control-btn:active {
+            transform: scale(0.85);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .control-btn.up {
+            background: rgba(0, 255, 136, 0.12);
+            border-color: rgba(0, 255, 136, 0.25);
+        }
+
+        .control-btn.up:active {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .control-btn.left {
+            background: rgba(0, 136, 255, 0.12);
+            border-color: rgba(0, 136, 255, 0.25);
+        }
+
+        .control-btn.left:active {
+            background: rgba(0, 136, 255, 0.3);
+        }
+
+        .control-btn.right {
+            background: rgba(255, 136, 0, 0.12);
+            border-color: rgba(255, 136, 0, 0.25);
+        }
+
+        .control-btn.right:active {
+            background: rgba(255, 136, 0, 0.3);
+        }
+
+        .control-btn.down {
+            background: rgba(255, 0, 100, 0.12);
+            border-color: rgba(255, 0, 100, 0.25);
+        }
+
+        .control-btn.down:active {
+            background: rgba(255, 0, 100, 0.3);
+        }
+
+        .btn-group-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .header { padding: 5px 10px; }
+            .score { font-size: 13px; }
+            .controls-info { font-size: 10px; }
+            .control-btn { width: 50px; height: 50px; font-size: 20px; }
+            .btn-group { gap: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            .control-btn { width: 45px; height: 45px; font-size: 17px; }
+            .btn-group { gap: 6px; }
+        }
+
+        @media (max-width: 380px) {
+            .control-btn { width: 38px; height: 38px; font-size: 14px; }
+            .btn-group { gap: 4px; }
+        }
+
+        @media (min-width: 1024px) {
+            .controls { display: none; }
+        }
+
+        .pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .pause-overlay.show { display: flex; }
+
+        .pause-text {
+            color: #fff;
+            font-size: 36px;
+            font-weight: bold;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .pause-sub { color: #888; font-size: 14px; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+        }
+
+        .gameover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            backdrop-filter: blur(12px);
+            z-index: 30;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .gameover-overlay.show { display: flex; }
+
+        .gameover-title {
+            color: #ff0040;
+            font-size: 42px;
+            font-weight: bold;
+            text-shadow: 0 0 40px rgba(255, 0, 64, 0.4);
+            text-align: center;
+        }
+
+        .gameover-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .gameover-stats span {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .gameover-btn {
+            padding: 14px 45px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 2px solid #00ff88;
+            color: #00ff88;
+            border-radius: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            margin-top: 5px;
+        }
+
+        .gameover-btn:active {
+            transform: scale(0.95);
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .gameover-title { font-size: 28px; }
+            .gameover-stats { font-size: 14px; gap: 5px 15px; }
+            .gameover-btn { padding: 10px 30px; font-size: 15px; }
+            .pause-text { font-size: 26px; }
+        }
+
+        .snake-status {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.alive {
+            animation: pulse-dot 1s ease-in-out infinite;
+        }
+
+        .status-dot.dead { opacity: 0.3; }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        .speed-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin: 0 5px;
+        }
+
+        .speed-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #ffdd00, #ff0040);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .fruit-legend {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .fruit-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            color: #888;
+            font-size: 11px;
+        }
+
+        .fruit-legend-item .emoji {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="score">🐍 Счет: <span id="scoreDisplay">0</span></div>
+        <div class="score">🍎 Еда: <span id="foodCount">0</span></div>
+        <div class="score">
+            ⚡ Скорость: <span id="speedDisplay">1.0</span>x
+            <div class="speed-bar">
+                <div class="speed-bar-fill" id="speedBarFill" style="width:10%"></div>
+            </div>
+        </div>
+        <div class="fruit-legend">
+            <div class="fruit-legend-item"><span class="emoji">🍎</span> +1</div>
+            <div class="fruit-legend-item"><span class="emoji">🍊</span> +2</div>
+            <div class="fruit-legend-item"><span class="emoji">🍇</span> +3</div>
+            <div class="fruit-legend-item"><span class="emoji">⭐</span> +5</div>
+        </div>
+        <div class="snake-status" id="snakeStatus">
+            <div class="status-item">
+                <span class="status-dot alive" style="background:#00ff88;"></span>
+                <span id="playerLength">4</span>
+            </div>
+        </div>
+        <div class="controls-info">⌨️ Стрелки</div>
+    </div>
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="controls" id="mobileControls">
+            <div class="btn-group">
+                <button class="control-btn left" data-dir="left">◀</button>
+                <div class="btn-group-vertical">
+                    <button class="control-btn up" data-dir="up">▲</button>
+                    <button class="control-btn down" data-dir="down">▼</button>
+                </div>
+                <button class="control-btn right" data-dir="right">▶</button>
+            </div>
+            <div class="btn-group">
+                <button class="control-btn" id="pauseBtn" style="width:50px;height:50px;font-size:16px;background:rgba(255,255,255,0.08);">⏸</button>
+            </div>
+        </div>
+
+        <div class="pause-overlay" id="pauseOverlay">
+            <div class="pause-text">⏸ ПАУЗА</div>
+            <div class="pause-sub">Нажмите P или кнопку ⏸</div>
+        </div>
+
+        <div class="gameover-overlay" id="gameoverOverlay">
+            <div class="gameover-title">💀 ИГРА ОКОНЧЕНА</div>
+            <div class="gameover-stats">
+                <div>Счет: <span id="finalScore">0</span></div>
+                <div>Длина: <span id="finalLength">0</span></div>
+                <div>Еды съедено: <span id="finalFood">0</span></div>
+                <div>Время: <span id="finalTime">0с</span></div>
+            </div>
+            <button class="gameover-btn" id="restartBtn">🔄 Играть снова</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // НАСТРОЙКИ
+    const CONFIG = {
+        gridSize: 30,
+        tileSize: 20,
+        maxSnakes: 3,
+        foodCount: 6,
+        initialLength: 4,
+        baseSpeed: 0.3,
+        maxSpeed: 3.0,
+        foodPerSpeedIncrease: 2,
+    };
+
+    // ТИПЫ ФРУКТОВ
+    const FRUIT_TYPES = {
+        apple: {
+            emoji: '🍎',
+            color: '#ff0040',
+            glowColor: 'rgba(255, 0, 64, 0.3)',
+            value: 1,
+            size: 0.4,
+            rarity: 45,
+            effect: 'normal'
+        },
+        orange: {
+            emoji: '🍊',
+            color: '#ff8800',
+            glowColor: 'rgba(255, 136, 0, 0.3)',
+            value: 2,
+            size: 0.4,
+            rarity: 25,
+            effect: 'normal'
+        },
+        grape: {
+            emoji: '🍇',
+            color: '#8b00ff',
+            glowColor: 'rgba(139, 0, 255, 0.3)',
+            value: 3,
+            size: 0.35,
+            rarity: 15,
+            effect: 'normal'
+        },
+        watermelon: {
+            emoji: '🍉',
+            color: '#00cc44',
+            glowColor: 'rgba(0, 204, 68, 0.3)',
+            value: 4,
+            size: 0.6,
+            rarity: 8,
+            effect: 'normal'
+        },
+        star: {
+            emoji: '⭐',
+            color: '#ffdd00',
+            glowColor: 'rgba(255, 221, 0, 0.4)',
+            value: 5,
+            size: 0.45,
+            rarity: 5,
+            effect: 'speed_boost'
+        },
+        cherry: {
+            emoji: '🍒',
+            color: '#cc0033',
+            glowColor: 'rgba(204, 0, 51, 0.3)',
+            value: 2,
+            size: 0.3,
+            rarity: 20,
+            effect: 'double'
+        },
+        lemon: {
+            emoji: '🍋',
+            color: '#ffdd00',
+            glowColor: 'rgba(255, 221, 0, 0.2)',
+            value: 1,
+            size: 0.35,
+            rarity: 30,
+            effect: 'slow'
+        },
+        peach: {
+            emoji: '🍑',
+            color: '#ffaa88',
+            glowColor: 'rgba(255, 170, 136, 0.3)',
+            value: 2,
+            size: 0.4,
+            rarity: 18,
+            effect: 'heal'
+        }
+    };
+
+    const FRUIT_LIST = Object.keys(FRUIT_TYPES);
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const foodCountDisplay = document.getElementById('foodCount');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const speedBarFill = document.getElementById('speedBarFill');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const finalLengthDisplay = document.getElementById('finalLength');
+    const finalFoodDisplay = document.getElementById('finalFood');
+    const finalTimeDisplay = document.getElementById('finalTime');
+    const gameoverOverlay = document.getElementById('gameoverOverlay');
+    const pauseOverlay = document.getElementById('pauseOverlay');
+    const snakeStatus = document.getElementById('snakeStatus');
+    const playerLengthDisplay = document.getElementById('playerLength');
+
+    const GRID = CONFIG.gridSize;
+    let TILE_SIZE = CONFIG.tileSize;
+    let canvasSize = GRID * TILE_SIZE;
+
+    function resizeCanvas() {
+        const wrapper = document.getElementById('canvasWrapper');
+        const rect = wrapper.getBoundingClientRect();
+        const width = rect.width || window.innerWidth - 30;
+        const height = rect.height || window.innerHeight - 160;
+        const size = Math.min(width, height, 800);
+        TILE_SIZE = Math.floor(size / GRID);
+        if (TILE_SIZE < 8) TILE_SIZE = 8;
+        canvasSize = TILE_SIZE * GRID;
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        canvas.style.width = canvasSize + 'px';
+        canvas.style.height = canvasSize + 'px';
+    }
+
+    setTimeout(resizeCanvas, 50);
+    window.addEventListener('resize', resizeCanvas);
+
+    class Snake {
+        constructor(id, color, headColor, startX, startY, direction = 'right') {
+            this.id = id;
+            this.color = color;
+            this.headColor = headColor;
+            this.direction = direction;
+            this.nextDirection = direction;
+            this.segments = [];
+            this.alive = true;
+            this.score = 0;
+            this.growCount = 0;
+            this.isPlayer = id === 0;
+            this.foodEaten = 0;
+            this.speed = CONFIG.baseSpeed;
+            this.moveCounter = 0;
+            this.effects = {
+                slow: false,
+                slowTimer: 0,
+                double: false,
+                doubleTimer: 0
+            };
+
+            for (let i = 0; i < CONFIG.initialLength; i++) {
+                let x = startX - i;
+                let y = startY;
+                if (x < 0) x = GRID - 1;
+                if (x >= GRID) x = 0;
+                this.segments.push({x, y});
+            }
+        }
+
+        increaseSpeed() {
+            this.foodEaten++;
+            const speedIncrement = Math.floor(this.foodEaten / CONFIG.foodPerSpeedIncrease) * 0.1;
+            let newSpeed = Math.min(CONFIG.maxSpeed, CONFIG.baseSpeed + speedIncrement);
+            
+            // Проверяем эффекты
+            if (this.effects.slow) {
+                newSpeed = Math.max(CONFIG.baseSpeed, newSpeed * 0.5);
+            }
+            if (this.effects.double) {
+                newSpeed = Math.min(CONFIG.maxSpeed * 1.2, newSpeed * 1.5);
+            }
+            
+            this.speed = newSpeed;
+            return this.speed;
+        }
+
+        applyEffect(effect, duration = 100) {
+            if (effect === 'slow') {
+                this.effects.slow = true;
+                this.effects.slowTimer = duration;
+                this.speed = Math.max(CONFIG.baseSpeed, this.speed * 0.5);
+            } else if (effect === 'double') {
+                this.effects.double = true;
+                this.effects.doubleTimer = duration;
+                this.speed = Math.min(CONFIG.maxSpeed * 1.2, this.speed * 1.5);
+            } else if (effect === 'heal') {
+                // Лечение - увеличиваем здоровье (в этой версии просто бонус к счету)
+                return 10;
+            }
+            return 0;
+        }
+
+        updateEffects() {
+            if (this.effects.slow) {
+                this.effects.slowTimer--;
+                if (this.effects.slowTimer <= 0) {
+                    this.effects.slow = false;
+                    this.increaseSpeed();
+                }
+            }
+            if (this.effects.double) {
+                this.effects.doubleTimer--;
+                if (this.effects.doubleTimer <= 0) {
+                    this.effects.double = false;
+                    this.increaseSpeed();
+                }
+            }
+        }
+
+        update() {
+            if (!this.alive) return false;
+
+            this.updateEffects();
+
+            this.moveCounter += this.speed;
+            if (this.moveCounter < 1) return true;
+            this.moveCounter = 0;
+
+            this.direction = this.nextDirection;
+            
+            const head = this.segments[0];
+            let newHead = {...head};
+
+            switch(this.direction) {
+                case 'up': newHead.y--; break;
+                case 'down': newHead.y++; break;
+                case 'left': newHead.x--; break;
+                case 'right': newHead.x++; break;
+            }
+
+            if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
+                this.alive = false;
+                return false;
+            }
+
+            for (let i = 0; i < this.segments.length; i++) {
+                if (this.segments[i].x === newHead.x && this.segments[i].y === newHead.y) {
+                    this.alive = false;
+                    return false;
+                }
+            }
+
+            this.segments.unshift(newHead);
+
+            if (this.growCount > 0) {
+                this.growCount--;
+            } else {
+                this.segments.pop();
+            }
+
+            return true;
+        }
+
+        grow(size = 1) {
+            this.growCount += size;
+        }
+
+        changeDirection(newDir) {
+            const opposites = {
+                'up': 'down',
+                'down': 'up',
+                'left': 'right',
+                'right': 'left'
+            };
+            if (newDir !== opposites[this.direction]) {
+                this.nextDirection = newDir;
+            }
+        }
+
+        getHead() {
+            return this.segments[0];
+        }
+
+        getLength() {
+            return this.segments.length;
+        }
+
+        checkCollisionWith(otherSnake) {
+            if (!this.alive || !otherSnake.alive) return false;
+            const head = this.getHead();
+            for (let i = 0; i < otherSnake.segments.length; i++) {
+                if (otherSnake.segments[i].x === head.x && otherSnake.segments[i].y === head.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    class Food {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+            const fruitData = FRUIT_TYPES[type];
+            this.color = fruitData.color;
+            this.glowColor = fruitData.glowColor;
+            this.value = fruitData.value;
+            this.size = fruitData.size;
+            this.emoji = fruitData.emoji;
+            this.effect = fruitData.effect;
+            this.alive = true;
+            this.pulse = Math.random() * Math.PI * 2;
+        }
+
+        update() {
+            this.pulse += 0.05;
+        }
+
+        draw(ctx, tileSize) {
+            const x = this.x * tileSize + tileSize / 2;
+            const y = this.y * tileSize + tileSize / 2;
+            const radius = tileSize * this.size;
+            const pulseSize = radius + Math.sin(this.pulse) * radius * 0.1;
+
+            // Свечение
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius * 3);
+            gradient.addColorStop(0, this.glowColor);
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Тень
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 25;
+
+            // Основной круг
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            // Эмодзи фрукта
+            const fontSize = pulseSize * 1.8;
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText(this.emoji, x, y + 1);
+
+            // Блик
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.beginPath();
+            ctx.arc(x - pulseSize * 0.25, y - pulseSize * 0.25, pulseSize * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Дополнительный эффект для звезды
+            if (this.type === 'star') {
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2 + this.pulse;
+                    const dist = radius * 1.3 + Math.sin(this.pulse * 2) * radius * 0.2;
+                    const sx = x + Math.cos(angle) * dist;
+                    const sy = y + Math.sin(angle) * dist;
+                    ctx.fillStyle = 'rgba(255, 221, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, radius * 0.1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+    }
+
+    let gameState = {
+        snakes: [],
+        foods: [],
+        score: 0,
+        running: false,
+        paused: false,
+        gameOver: false,
+        frameCount: 0,
+        aiSnakes: [],
+        startTime: 0,
+        totalFoodEaten: 0,
+        effects: {
+            speedBoost: false,
+            speedBoostTimer: 0
+        }
+    };
+
+    const SNAKE_COLORS = [
+        { body: '#00ff88', head: '#00ffaa' },
+        { body: '#ff4466', head: '#ff6688' },
+        { body: '#4488ff', head: '#66aaff' },
+        { body: '#ff8800', head: '#ffaa44' },
+    ];
+
+    function getRandomFruitType() {
+        const rand = Math.random() * 100;
+        let cumulative = 0;
+        for (const type of FRUIT_LIST) {
+            cumulative += FRUIT_TYPES[type].rarity;
+            if (rand < cumulative) {
+                return type;
+            }
+        }
+        return 'apple';
+    }
+
+    function initGame() {
+        gameState.snakes = [];
+        gameState.foods = [];
+        gameState.score = 0;
+        gameState.running = true;
+        gameState.paused = false;
+        gameState.gameOver = false;
+        gameState.frameCount = 0;
+        gameState.aiSnakes = [];
+        gameState.totalFoodEaten = 0;
+        gameState.startTime = Date.now();
+
+        const playerStartX = Math.floor(GRID / 2);
+        const playerStartY = Math.floor(GRID / 2);
+        const player = new Snake(0, SNAKE_COLORS[0].body, SNAKE_COLORS[0].head, 
+                                playerStartX, playerStartY, 'right');
+        gameState.snakes.push(player);
+
+        const aiStartPositions = [
+            {x: 4, y: 4},
+            {x: GRID - 5, y: 4},
+            {x: 4, y: GRID - 5},
+        ];
+
+        for (let i = 1; i <= CONFIG.maxSnakes - 1 && i < SNAKE_COLORS.length; i++) {
+            const pos = aiStartPositions[i - 1] || aiStartPositions[0];
+            const snake = new Snake(i, SNAKE_COLORS[i].body, SNAKE_COLORS[i].head,
+                                   pos.x, pos.y, 'up');
+            snake.segments = snake.segments.map((seg, idx) => ({
+                x: Math.max(0, Math.min(GRID - 1, seg.x + (i * 3))),
+                y: Math.max(0, Math.min(GRID - 1, seg.y + (i * 3)))
+            }));
+            gameState.snakes.push(snake);
+            gameState.aiSnakes.push(snake);
+        }
+
+        spawnFoods(CONFIG.foodCount);
+        updateUI();
+        updateSnakeStatus();
+        gameoverOverlay.classList.remove('show');
+        pauseOverlay.classList.remove('show');
+    }
+
+    function spawnFoods(count) {
+        for (let i = 0; i < count; i++) {
+            let food = createFood();
+            if (food) gameState.foods.push(food);
+        }
+    }
+
+    function createFood() {
+        let attempts = 0;
+        while (attempts < 200) {
+            const x = Math.floor(Math.random() * GRID);
+            const y = Math.floor(Math.random() * GRID);
+            
+            let onSnake = false;
+            for (const snake of gameState.snakes) {
+                for (const seg of snake.segments) {
+                    if (seg.x === x && seg.y === y) {
+                        onSnake = true;
+                        break;
+                    }
+                }
+                if (onSnake) break;
+            }
+            
+            let onFood = false;
+            for (const food of gameState.foods) {
+                if (food.x === x && food.y === y) {
+                    onFood = true;
+                    break;
+                }
+            }
+            
+            if (!onSnake && !onFood) {
+                const type = getRandomFruitType();
+                return new Food(x, y, type);
+            }
+            attempts++;
+        }
+        return null;
+    }
+
+    function updateAI(snake) {
+        if (!snake.alive) return;
+
+        const head = snake.getHead();
+        const dirVectors = {
+            'up': {x: 0, y: -1},
+            'down': {x: 0, y: 1},
+            'left': {x: -1, y: 0},
+            'right': {x: 1, y: 0}
+        };
+
+        // Ищем лучшую еду (с наивысшей ценностью)
+        let bestFood = null;
+        let bestScore = -Infinity;
+        
+        for (const food of gameState.foods) {
+            const dist = Math.abs(food.x - head.x) + Math.abs(food.y - head.y);
+            const value = food.value * 10 - dist;
+            if (value > bestScore) {
+                bestScore = value;
+                bestFood = food;
+            }
+        }
+
+        if (!bestFood) return;
+
+        const dx = bestFood.x - head.x;
+        const dy = bestFood.y - head.y;
+
+        let preferredDirs = [];
+        if (Math.abs(dx) > Math.abs(dy)) {
+            preferredDirs = dx > 0 ? ['right', 'up', 'down', 'left'] : ['left', 'up', 'down', 'right'];
+        } else {
+            preferredDirs = dy > 0 ? ['down', 'right', 'left', 'up'] : ['up', 'right', 'left', 'down'];
+        }
+
+        for (const dir of preferredDirs) {
+            const vec = dirVectors[dir];
+            const newX = head.x + vec.x;
+            const newY = head.y + vec.y;
+            
+            if (newX < 0 || newX >= GRID || newY < 0 || newY >= GRID) continue;
+            
+            let collision = false;
+            for (let i = 0; i < snake.segments.length - 1; i++) {
+                if (snake.segments[i].x === newX && snake.segments[i].y === newY) {
+                    collision = true;
+                    break;
+                }
+            }
+            if (collision) continue;
+            
+            for (const other of gameState.snakes) {
+                if (other.id === snake.id || !other.alive) continue;
+                for (const seg of other.segments) {
+                    if (seg.x === newX && seg.y === newY) {
+                        collision = true;
+                        break;
+                    }
+                }
+                if (collision) break;
+            }
+            if (collision) continue;
+            
+            snake.changeDirection(dir);
+            return;
+        }
+
+        const opposites = {
+            'up': 'down',
+            'down': 'up',
+            'left': 'right',
+            'right': 'left'
+        };
+        for (const dir of Object.keys(dirVectors)) {
+            if (dir !== opposites[snake.direction]) {
+                snake.changeDirection(dir);
+                return;
+            }
+        }
+    }
+
+    function updateGame() {
+        if (!gameState.running || gameState.paused || gameState.gameOver) return;
+
+        gameState.frameCount++;
+
+        for (const aiSnake of gameState.aiSnakes) {
+            if (aiSnake.alive) {
+                updateAI(aiSnake);
+            }
+        }
+
+        for (const snake of gameState.snakes) {
+            if (snake.alive) {
+                snake.update();
+            }
+        }
+
+        for (let i = 0; i < gameState.snakes.length; i++) {
+            for (let j = i + 1; j < gameState.snakes.length; j++) {
+                const s1 = gameState.snakes[i];
+                const s2 = gameState.snakes[j];
+                if (s1.alive && s2.alive) {
+                    if (s1.checkCollisionWith(s2)) {
+                        s1.alive = false;
+                    }
+                    if (s2.checkCollisionWith(s1)) {
+                        s2.alive = false;
+                    }
+                }
+            }
+        }
+
+        let aliveCount = 0;
+        for (const snake of gameState.snakes) {
+            if (snake.alive) aliveCount++;
+            if (snake.isPlayer && !snake.alive) {
+                gameOver();
+                return;
+            }
+        }
+
+        if (aliveCount === 0) {
+            gameOver();
+            return;
+        }
+
+        // Обновляем еду
+        for (const food of gameState.foods) {
+            food.update();
+        }
+
+        for (const snake of gameState.snakes) {
+            if (!snake.alive) continue;
+            const head = snake.getHead();
+            
+            for (let i = gameState.foods.length - 1; i >= 0; i--) {
+                const food = gameState.foods[i];
+                if (food.x === head.x && food.y === head.y) {
+                    // Применяем эффект фрукта
+                    let bonusPoints = 0;
+                    if (food.effect === 'heal') {
+                        bonusPoints = 10;
+                    } else if (food.effect === 'speed_boost') {
+                        // Ускорение на время
+                        snake.speed = Math.min(CONFIG.maxSpeed * 1.3, snake.speed * 1.5);
+                        setTimeout(() => {
+                            if (snake.alive) {
+                                snake.increaseSpeed();
+                            }
+                        }, 5000);
+                    }
+
+                    snake.grow(food.value);
+                    gameState.totalFoodEaten += food.value;
+                    
+                    const newSpeed = snake.increaseSpeed();
+                    
+                    if (snake.isPlayer) {
+                        gameState.score += (food.value * 10) + bonusPoints;
+                        updateUI();
+                    }
+                    gameState.foods.splice(i, 1);
+                    
+                    const newFood = createFood();
+                    if (newFood) gameState.foods.push(newFood);
+                    
+                    if (gameState.foods.length < CONFIG.foodCount) {
+                        const extra = createFood();
+                        if (extra) gameState.foods.push(extra);
+                    }
+                }
+            }
+        }
+
+        updateUI();
+        updateSnakeStatus();
+    }
+
+    function gameOver() {
+        gameState.running = false;
+        gameState.gameOver = true;
+        const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+        
+        finalScoreDisplay.textContent = gameState.score;
+        const player = gameState.snakes[0];
+        finalLengthDisplay.textContent = player ? player.getLength() : 0;
+        finalFoodDisplay.textContent = gameState.totalFoodEaten;
+        finalTimeDisplay.textContent = elapsed + 'с';
+        gameoverOverlay.classList.add('show');
+    }
+
+    function updateUI() {
+        scoreDisplay.textContent = gameState.score;
+        foodCountDisplay.textContent = gameState.foods.length;
+        
+        const player = gameState.snakes[0];
+        if (player) {
+            const speed = player.speed;
+            speedDisplay.textContent = speed.toFixed(1);
+            const percent = ((speed - CONFIG.baseSpeed) / (CONFIG.maxSpeed - CONFIG.baseSpeed)) * 100;
+            speedBarFill.style.width = Math.min(100, percent + 10) + '%';
+        }
+    }
+
+    function updateSnakeStatus() {
+        let html = '';
+        for (const snake of gameState.snakes) {
+            const color = snake.color;
+            const alive = snake.alive;
+            const length = snake.getLength();
+            const isPlayer = snake.isPlayer;
+            html += `
+                <div class="status-item">
+                    <span class="status-dot ${alive ? 'alive' : 'dead'}" style="background:${color};"></span>
+                    <span style="color:${alive ? '#fff' : '#666'}">${isPlayer ? '👤' : '🤖'}${length}</span>
+                </div>
+            `;
+        }
+        snakeStatus.innerHTML = html;
+        if (gameState.snakes[0]) {
+            playerLengthDisplay.textContent = gameState.snakes[0].getLength();
+        }
+    }
+
+    function drawGame() {
+        ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+        // Сетка
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= GRID; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * TILE_SIZE, 0);
+            ctx.lineTo(i * TILE_SIZE, canvasSize);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * TILE_SIZE);
+            ctx.lineTo(canvasSize, i * TILE_SIZE);
+            ctx.stroke();
+        }
+
+        // Еда
+        for (const food of gameState.foods) {
+            food.draw(ctx, TILE_SIZE);
+        }
+
+        // Змейки
+        for (const snake of gameState.snakes) {
+            if (!snake.alive) continue;
+
+            const speedGlow = (snake.speed - CONFIG.baseSpeed) / (CONFIG.maxSpeed - CONFIG.baseSpeed);
+            
+            for (let i = 0; i < snake.segments.length; i++) {
+                const seg = snake.segments[i];
+                const x = seg.x * TILE_SIZE;
+                const y = seg.y * TILE_SIZE;
+                const padding = 2;
+                const size = TILE_SIZE - padding * 2;
+
+                const ratio = i / snake.segments.length;
+                const alpha = 0.7 + 0.3 * (1 - ratio);
+                
+                let color = snake.color;
+                if (i === 0 && speedGlow > 0.3) {
+                    const glowIntensity = Math.min(1, speedGlow * 1.5);
+                    const r = parseInt(color.slice(1,3), 16);
+                    const g = parseInt(color.slice(3,5), 16);
+                    const b = parseInt(color.slice(5,7), 16);
+                    const newR = Math.min(255, r + (255 - r) * glowIntensity * 0.3);
+                    const newG = Math.min(255, g + (255 - g) * glowIntensity * 0.3);
+                    const newB = Math.min(255, b + (255 - b) * glowIntensity * 0.3);
+                    color = `rgb(${newR},${newG},${newB})`;
+                }
+
+                // Эффект замедления - синий оттенок
+                if (snake.effects.slow) {
+                    color = `rgb(100, 100, 255)`;
+                }
+                // Эффект удвоения - золотой оттенок
+                if (snake.effects.double) {
+                    color = `rgb(255, 215, 0)`;
+                }
+
+                ctx.shadowColor = i === 0 ? 'rgba(0, 255, 136, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+                ctx.shadowBlur = i === 0 ? 15 : 5;
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                
+                const radius = 4;
+                ctx.beginPath();
+                ctx.moveTo(x + padding + radius, y + padding);
+                ctx.lineTo(x + padding + size - radius, y + padding);
+                ctx.quadraticCurveTo(x + padding + size, y + padding, x + padding + size, y + padding + radius);
+                ctx.lineTo(x + padding + size, y + padding + size - radius);
+                ctx.quadraticCurveTo(x + padding + size, y + padding + size, x + padding + size - radius, y + padding + size);
+                ctx.lineTo(x + padding + radius, y + padding + size);
+                ctx.quadraticCurveTo(x + padding, y + padding + size, x + padding, y + padding + size - radius);
+                ctx.lineTo(x + padding, y + padding + radius);
+                ctx.quadraticCurveTo(x + padding, y + padding, x + padding + radius, y + padding);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                if (i === 0) {
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'white';
+                    let eyeOffset = TILE_SIZE * 0.22;
+                    let eyeSize = TILE_SIZE * 0.14;
+                    
+                    const dirs = {
+                        'up': [{x: -eyeOffset, y: -eyeOffset}, {x: eyeOffset, y: -eyeOffset}],
+                        'down': [{x: -eyeOffset, y: eyeOffset}, {x: eyeOffset, y: eyeOffset}],
+                        'left': [{x: -eyeOffset, y: -eyeOffset}, {x: -eyeOffset, y: eyeOffset}],
+                        'right': [{x: eyeOffset, y: -eyeOffset}, {x: eyeOffset, y: eyeOffset}]
+                    };
+                    
+                    const eyes = dirs[snake.direction] || dirs['right'];
+                    for (const eye of eyes) {
+                        const ex = x + TILE_SIZE / 2 + eye.x;
+                        const ey = y + TILE_SIZE / 2 + eye.y;
+                        ctx.beginPath();
+                        ctx.arc(ex, ey, eyeSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = '#0a0a1a';
+                        const pupilOffset = TILE_SIZE * 0.04;
+                        const pupilDirs = {
+                            'up': {x: 0, y: -pupilOffset},
+                            'down': {x: 0, y: pupilOffset},
+                            'left': {x: -pupilOffset, y: 0},
+                            'right': {x: pupilOffset, y: 0}
+                        };
+                        const pDir = pupilDirs[snake.direction] || pupilDirs['right'];
+                        ctx.beginPath();
+                        ctx.arc(ex + pDir.x, ey + pDir.y, eyeSize * 0.35, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = 'white';
+                    }
+                }
+            }
+
+            // Свечение вокруг головы
+            const head = snake.getHead();
+            const hx = head.x * TILE_SIZE + TILE_SIZE / 2;
+            const hy = head.y * TILE_SIZE + TILE_SIZE / 2;
+            const speedFactor = (snake.speed - CONFIG.baseSpeed) / (CONFIG.maxSpeed - CONFIG.baseSpeed);
+            const glowSize = TILE_SIZE * (1 + speedFactor * 1.5);
+            const glow = ctx.createRadialGradient(hx, hy, 0, hx, hy, glowSize);
+            const alpha = 0.1 + speedFactor * 0.25;
+            
+            let glowColor = snake.isPlayer ? `rgba(0, 255, 136, ${alpha})` : `rgba(255, 255, 255, ${alpha * 0.5})`;
+            if (snake.effects.slow) glowColor = `rgba(100, 100, 255, ${alpha * 0.5})`;
+            if (snake.effects.double) glowColor = `rgba(255, 215, 0, ${alpha * 0.5})`;
+            
+            glow.addColorStop(0, glowColor);
+            glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(hx, hy, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.shadowBlur = 0;
+    }
+
+    function gameLoop() {
+        updateGame();
+        drawGame();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Управление
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'p' || e.key === 'P') {
+            togglePause();
+            return;
+        }
+
+        const player = gameState.snakes[0];
+        if (!player || !player.alive || gameState.paused || gameState.gameOver) return;
+
+        const keyMap = {
+            'ArrowUp': 'up',
+            'ArrowDown': 'down',
+            'ArrowLeft': 'left',
+            'ArrowRight': 'right',
+            'w': 'up', 'W': 'up',
+            's': 'down', 'S': 'down',
+            'a': 'left', 'A': 'left',
+            'd': 'right', 'D': 'right'
+        };
+
+        if (keyMap[e.key]) {
+            e.preventDefault();
+            player.changeDirection(keyMap[e.key]);
+        }
+    });
+
+    document.querySelectorAll('.control-btn[data-dir]').forEach(btn => {
+        const handler = (e) => {
+            e.preventDefault();
+            const player = gameState.snakes[0];
+            if (!player || !player.alive || gameState.paused || gameState.gameOver) return;
+            player.changeDirection(btn.dataset.dir);
+        };
+        btn.addEventListener('touchstart', handler, { passive: false });
+        btn.addEventListener('mousedown', handler);
+    });
+
+    function togglePause() {
+        if (gameState.gameOver) return;
+        gameState.paused = !gameState.paused;
+        pauseOverlay.classList.toggle('show', gameState.paused);
+    }
+
+    document.getElementById('pauseBtn').addEventListener('click', togglePause);
+    document.getElementById('pauseBtn').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        togglePause();
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', initGame);
+    document.getElementById('restartBtn').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        initGame();
+    });
+
+    // Свайп
+    let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchEndX = touch.clientX;
+        touchEndY = touch.clientY;
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (touchStartX === 0 && touchStartY === 0) return;
+        
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        
+        if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+        
+        const player = gameState.snakes[0];
+        if (!player || !player.alive || gameState.paused || gameState.gameOver) return;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+            player.changeDirection(dx > 0 ? 'right' : 'left');
+        } else {
+            player.changeDirection(dy > 0 ? 'down' : 'up');
+        }
+        
+        touchStartX = 0;
+        touchStartY = 0;
+        touchEndX = 0;
+        touchEndY = 0;
+    }, { passive: false });
+
+    // Запуск
+    setTimeout(() => {
+        initGame();
+        gameLoop();
+    }, 100);
+
+    window.addEventListener('resize', resizeCanvas);
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && gameState.running && !gameState.gameOver && !gameState.paused) {
+            togglePause();
+        }
+    });
+
+    console.log('🐍 Фруктовый рай!');
+    console.log('🍎 Яблоко +1');
+    console.log('🍊 Апельсин +2');
+    console.log('🍇 Виноград +3');
+    console.log('🍉 Арбуз +4');
+    console.log('⭐ Звезда +5 и ускорение!');
+    console.log('🍒 Вишня двойной рост!');
+    console.log('🍋 Лимон замедляет');
+    console.log('🍑 Персик лечит');
+</script>
+</body>
+</html>
